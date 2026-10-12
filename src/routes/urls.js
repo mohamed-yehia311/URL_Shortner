@@ -1,14 +1,9 @@
 const crypto = require('crypto')
 const express = require('express')
 const pool = require('../db')
+const authenticate = require('../middleware/authenticate')
 
 const router = express.Router()
-
-function parseUserId(value) {
-  if (!/^\d+$/.test(String(value || ''))) return null
-  const userId = Number(value)
-  return Number.isSafeInteger(userId) && userId > 0 ? userId : null
-}
 
 function isHttpUrl(value) {
   try {
@@ -25,17 +20,16 @@ function isHttpUrl(value) {
  *   post:
  *     summary: Create a shortened URL
  *     tags: [URLs]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [user_id, original_url]
+ *             required: [original_url]
  *             properties:
- *               user_id:
- *                 type: integer
- *                 example: 1
  *               original_url:
  *                 type: string
  *                 format: uri
@@ -48,17 +42,17 @@ function isHttpUrl(value) {
  *             schema:
  *               $ref: '#/components/schemas/Url'
  *       '400':
- *         description: Invalid user_id or original_url
- *       '404':
- *         description: User does not exist
+ *         description: Invalid original_url
+ *       '401':
+ *         description: Missing or invalid access token
  */
-router.post('/', async (req, res) => {
-  const userId = parseUserId(req.body?.user_id)
+router.post('/', authenticate, async (req, res) => {
+  const userId = req.user.id
   const originalUrl = req.body?.original_url
 
-  if (!userId || typeof originalUrl !== 'string' || !isHttpUrl(originalUrl)) {
+  if (typeof originalUrl !== 'string' || !isHttpUrl(originalUrl)) {
     return res.status(400).json({
-      error: 'Provide a positive integer user_id and an HTTP or HTTPS original_url.',
+      error: 'Provide an HTTP or HTTPS original_url.',
     })
   }
 
@@ -92,13 +86,8 @@ router.post('/', async (req, res) => {
  *   get:
  *     summary: List URLs belonging to a user
  *     tags: [URLs]
- *     parameters:
- *       - in: query
- *         name: user_id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       '200':
  *         description: User's URLs, newest first
@@ -108,22 +97,17 @@ router.post('/', async (req, res) => {
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Url'
- *       '400':
- *         description: Invalid or missing user_id
+ *       '401':
+ *         description: Missing or invalid access token
  */
-router.get('/', async (req, res) => {
-  const userId = parseUserId(req.query.user_id)
-  if (!userId) {
-    return res.status(400).json({ error: 'A positive integer user_id query parameter is required.' })
-  }
-
+router.get('/', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, user_id, original_url, short_key, created_at
        FROM urls
        WHERE user_id = $1
        ORDER BY created_at DESC`,
-      [userId],
+      [req.user.id],
     )
     return res.status(200).json(result.rows)
   } catch (error) {
@@ -173,36 +157,27 @@ router.get('/:code', async (req, res) => {
  *   delete:
  *     summary: Delete one of a user's shortened URLs
  *     tags: [URLs]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: code
  *         required: true
  *         schema:
  *           type: string
- *       - in: query
- *         name: user_id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
  *     responses:
  *       '204':
  *         description: URL deleted
- *       '400':
- *         description: Invalid or missing user_id
+ *       '401':
+ *         description: Missing or invalid access token
  *       '404':
  *         description: URL not found for this user
  */
-router.delete('/:code', async (req, res) => {
-  const userId = parseUserId(req.query.user_id)
-  if (!userId) {
-    return res.status(400).json({ error: 'A positive integer user_id query parameter is required.' })
-  }
-
+router.delete('/:code', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
       'DELETE FROM urls WHERE short_key = $1 AND user_id = $2 RETURNING id',
-      [req.params.code, userId],
+      [req.params.code, req.user.id],
     )
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'URL not found for this user.' })

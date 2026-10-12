@@ -1,25 +1,64 @@
-### 1. Create a Shortened URL
-POST http://localhost:8080/urls
+@baseUrl = http://localhost:8080
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTE4MTk1OTUsImV4cCI6MTc5MTgyMDQ5NSwiYXVkIjoidXJsLXNob3J0ZW5lci1jbGllbnQiLCJpc3MiOiJ1cmwtc2hvcnRlbmVyLWFwaSIsInN1YiI6IjQifQ.GQdARXbNg-osP3bsADtMCkBgK3leIEQFbqFlKIeTugc
+@refreshToken = H_-2LieW8ix-1_EABeT73rwLxz5ovKH2byz8FS-H4eMqRWWYm56lmDJ7ah6RFApd
+
+### 1. Register a user (run once; use unique username/email)
+POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "user_id": 1,
+  "username": "sam",
+  "email": "sam@example.com",
+  "password": "replace-with-a-long-password"
+}
+
+### 2. Log in, then copy access_token and refresh_token from the response above
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "sam@example.com",
+  "password": "replace-with-a-long-password"
+}
+
+### 3. Create a shortened URL (requires Bearer access token)
+POST {{baseUrl}}/urls
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
   "original_url": "https://example.com/very/long/path"
 }
 
 ###
 
-### 2. List All URLs for a User
-GET http://localhost:8080/urls?user_id=1
+### 4. List your URLs (owner comes from the access token)
+GET {{baseUrl}}/urls
+Authorization: Bearer {{accessToken}}
 
 ###
 
-### 3. Resolve / Redirect Short URL 
-# (Replace 'abc123' with an actual short_key returned from your POST request)
-GET http://localhost:8080/urls/qfrg7AmA
+### 5. Resolve / redirect a short key (public endpoint)
+GET {{baseUrl}}/urls/replace_with_short_key
 
 ###
 
-### 4. Delete a Short URL
-# (Replace 'abc123' with the short code you want to delete)
-DELETE http://localhost:8080/urls/tfRp5rGJ?user_id=1
+### 6. Delete your URL (requires Bearer access token)
+DELETE {{baseUrl}}/urls/replace_with_short_key
+Authorization: Bearer {{accessToken}}
+
+### 7. Refresh token (copy both newly returned tokens; old refresh token is revoked)
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+### 8. Log out / revoke current refresh token
+POST {{baseUrl}}/auth/logout
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
