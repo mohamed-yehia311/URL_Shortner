@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PGDATABASE:-url_shortener}
+      POSTGRES_USER: ${PGUSER:-url_app}
+      POSTGRES_PASSWORD: ${PGPASSWORD:?Add PGPASSWORD to .env}
+    ports:
+      - "${PGPORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-url_app} -d ${PGDATABASE:-url_shortener}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    name: postgres_data
