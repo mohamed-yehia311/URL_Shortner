@@ -1,0 +1,31 @@
+{
+  "name": "url_shortner",
+  "version": "1.0.0",
+  "description": "A high-performance, low-latency URL shortening and analytics system built for scale. Features instant Redis-backed caching for public redirects, a secure PostgreSQL write path with RBAC authentication, and an asynchronous ClickHouse analytics pipeline for deep telemetry insights.",
+  "homepage": "https://github.com/mohamed-yehia311/URL_Shortner#readme",
+  "bugs": {
+    "url": "https://github.com/mohamed-yehia311/URL_Shortner/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mohamed-yehia311/URL_Shortner.git"
+  },
+  "author": "Mohamed Yehia",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon ./src/server.js"
+  },
+  "dependencies": {
+    "argon2": "^0.45.1",
+    "dotenv": "^18.0.7",
+    "express": "^5.3.0",
+    "ioredis": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "nodemon": "^3.1.14",
+    "pg": "^8.23.1",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
+  }
+}
