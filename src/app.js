@@ -1,8 +1,8 @@
 const express = require('express')
 const swaggerUi = require('swagger-ui-express')
 const app = express()
-const url_router = require("./routes/urls")
-const auth_router = require('./routes/auth')
+const url_router = require('./apps/urls/entry-points/api/urls.router')
+const auth_router = require('./apps/auth/entry-points/api/auth.router')
 const openapiSpecification = require('./swagger')
 
 app.use(express.json())
