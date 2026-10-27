@@ -1,6 +1,19 @@
-const jwt = require('jsonwebtoken')
+import { Request, Response, NextFunction } from 'express'
+import jwt from 'jsonwebtoken'
 
-module.exports = function authenticate(req, res, next) {
+export interface AuthenticatedUser {
+  id: string
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthenticatedUser
+    }
+  }
+}
+
+export default function authenticate(req: Request, res: Response, next: NextFunction): void | Response {
   const authorization = req.get('authorization') || ''
   const [scheme, token] = authorization.split(' ')
 
@@ -17,7 +30,8 @@ module.exports = function authenticate(req, res, next) {
       algorithms: ['HS256'],
       issuer: 'url-shortener-api',
       audience: 'url-shortener-client',
-    })
+    }) as { sub?: string }
+
     if (typeof payload.sub !== 'string' || !/^\d+$/.test(payload.sub)) {
       return res.status(401).json({ error: 'Invalid access token.' })
     }

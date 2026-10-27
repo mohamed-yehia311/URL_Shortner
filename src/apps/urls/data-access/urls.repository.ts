@@ -1,6 +1,18 @@
-const pool = require('../../../db')
+import pool from '../../../db'
 
-async function createUrl(userId, originalUrl, shortKey) {
+export interface UrlRecord {
+  id: string | number
+  user_id: string | number
+  original_url: string
+  short_key: string
+  created_at: Date | string
+}
+
+export async function createUrl(
+  userId: string | number,
+  originalUrl: string,
+  shortKey: string,
+): Promise<UrlRecord> {
   const result = await pool.query(
     `INSERT INTO urls (user_id, original_url, short_key)
      VALUES ($1, $2, $3)
@@ -10,7 +22,7 @@ async function createUrl(userId, originalUrl, shortKey) {
   return result.rows[0]
 }
 
-async function listUrlsByUser(userId) {
+export async function listUrlsByUser(userId: string | number): Promise<UrlRecord[]> {
   const result = await pool.query(
     `SELECT id, user_id, original_url, short_key, created_at
      FROM urls
@@ -21,7 +33,7 @@ async function listUrlsByUser(userId) {
   return result.rows
 }
 
-async function findUrlByShortKey(shortKey) {
+export async function findUrlByShortKey(shortKey: string): Promise<Pick<UrlRecord, 'original_url'> | undefined> {
   const result = await pool.query(
     'SELECT original_url FROM urls WHERE short_key = $1',
     [shortKey],
@@ -29,15 +41,15 @@ async function findUrlByShortKey(shortKey) {
   return result.rows[0]
 }
 
-async function deleteUrl(shortKey, userId) {
+export async function deleteUrl(shortKey: string, userId: string | number): Promise<boolean> {
   const result = await pool.query(
     'DELETE FROM urls WHERE short_key = $1 AND user_id = $2 RETURNING id',
     [shortKey, userId],
   )
-  return result.rowCount > 0
+  return (result.rowCount ?? 0) > 0
 }
 
-module.exports = {
+export default {
   createUrl,
   listUrlsByUser,
   findUrlByShortKey,

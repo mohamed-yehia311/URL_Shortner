@@ -1,6 +1,6 @@
-const express = require('express')
-const authenticate = require('../../../auth/entry-points/api/authenticate.middleware')
-const urlsService = require('../../domain/urls.service')
+import express, { Request, Response } from 'express'
+import authenticate from '../../../auth/entry-points/api/authenticate.middleware'
+import urlsService from '../../domain/urls.service'
 
 const router = express.Router()
 
@@ -36,14 +36,18 @@ const router = express.Router()
  *       '401':
  *         description: Missing or invalid access token
  */
-router.post('/', authenticate, async (req, res) => {
-  const userId = req.user.id
+router.post('/', authenticate, async (req: Request, res: Response) => {
+  const userId = req.user?.id
   const originalUrl = req.body?.original_url
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Missing or invalid access token.' })
+  }
 
   try {
     const url = await urlsService.shortenUrl(userId, originalUrl)
     return res.status(201).json(url)
-  } catch (error) {
+  } catch (error: any) {
     if (error.statusCode) {
       return res.status(error.statusCode).json({ error: error.message })
     }
@@ -72,11 +76,16 @@ router.post('/', authenticate, async (req, res) => {
  *       '401':
  *         description: Missing or invalid access token
  */
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req: Request, res: Response) => {
+  const userId = req.user?.id
+  if (!userId) {
+    return res.status(401).json({ error: 'Missing or invalid access token.' })
+  }
+
   try {
-    const urls = await urlsService.listUrls(req.user.id)
+    const urls = await urlsService.listUrls(userId)
     return res.status(200).json(urls)
-  } catch (error) {
+  } catch (error: any) {
     if (error.statusCode) {
       return res.status(error.statusCode).json({ error: error.message })
     }
@@ -104,11 +113,12 @@ router.get('/', authenticate, async (req, res) => {
  *       '404':
  *         description: Short code not found
  */
-router.get('/:code', async (req, res) => {
+router.get('/:code', async (req: Request, res: Response) => {
   try {
-    const originalUrl = await urlsService.resolveUrl(req.params.code)
+    const code = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code
+    const originalUrl = await urlsService.resolveUrl(code)
     return res.redirect(302, originalUrl)
-  } catch (error) {
+  } catch (error: any) {
     if (error.statusCode) {
       return res.status(error.statusCode).json({ error: error.message })
     }
@@ -139,11 +149,17 @@ router.get('/:code', async (req, res) => {
  *       '404':
  *         description: URL not found for this user
  */
-router.delete('/:code', authenticate, async (req, res) => {
+router.delete('/:code', authenticate, async (req: Request, res: Response) => {
+  const userId = req.user?.id
+  if (!userId) {
+    return res.status(401).json({ error: 'Missing or invalid access token.' })
+  }
+
   try {
-    await urlsService.deleteUrl(req.params.code, req.user.id)
+    const code = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code
+    await urlsService.deleteUrl(code, userId)
     return res.status(204).end()
-  } catch (error) {
+  } catch (error: any) {
     if (error.statusCode) {
       return res.status(error.statusCode).json({ error: error.message })
     }
@@ -152,4 +168,4 @@ router.delete('/:code', authenticate, async (req, res) => {
   }
 })
 
-module.exports = router
+export default router

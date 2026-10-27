@@ -1,5 +1,5 @@
-const express = require('express')
-const authService = require('../../domain/auth.service')
+import express, { Request, Response } from 'express'
+import authService from '../../domain/auth.service'
 
 const router = express.Router()
 
@@ -42,12 +42,12 @@ const router = express.Router()
  *       '409':
  *         description: Email or username is already registered
  */
-router.post('/register', async (req, res) => {
+router.post('/register', async (req: Request, res: Response) => {
   const username = typeof req.body?.username === 'string' ? req.body.username.trim() : ''
   const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ''
   const password = req.body?.password
 
-  //  validate username, email, and password
+  // validate username, email, and password
   if (!/^[a-zA-Z0-9_.-]{3,50}$/.test(username)) {
     return res.status(400).json({ error: 'Username must be 3–50 characters and contain only letters, numbers, dots, underscores, or hyphens.' })
   }
@@ -61,7 +61,7 @@ router.post('/register', async (req, res) => {
   try {
     const session = await authService.register(username, email, password)
     return res.status(201).json(session)
-  } catch (error) {
+  } catch (error: any) {
     if (error.code === '23505') {
       return res.status(409).json({ error: 'Email or username is already registered.' })
     }
@@ -101,7 +101,7 @@ router.post('/register', async (req, res) => {
  *       '401':
  *         description: Email or password is incorrect
  */
-router.post('/login', async (req, res) => {
+router.post('/login', async (req: Request, res: Response) => {
   const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ''
   const password = req.body?.password
   // validate email and password
@@ -112,7 +112,7 @@ router.post('/login', async (req, res) => {
   try {
     const session = await authService.login(email, password)
     return res.status(200).json(session)
-  } catch (error) {
+  } catch (error: any) {
     if (error.statusCode) {
       return res.status(error.statusCode).json({ error: error.message })
     }
@@ -147,7 +147,7 @@ router.post('/login', async (req, res) => {
  *       '401':
  *         description: Refresh token is invalid, expired, revoked, or reused
  */
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', async (req: Request, res: Response) => {
   const presentedToken = req.body?.refresh_token
   if (typeof presentedToken !== 'string' || presentedToken.length < 32) {
     return res.status(401).json({ error: 'A valid refresh token is required.' })
@@ -156,7 +156,7 @@ router.post('/refresh', async (req, res) => {
   try {
     const tokens = await authService.refresh(presentedToken)
     return res.status(200).json(tokens)
-  } catch (error) {
+  } catch (error: any) {
     if (error.statusCode) {
       return res.status(error.statusCode).json({ error: error.message })
     }
@@ -185,7 +185,7 @@ router.post('/refresh', async (req, res) => {
  *       '204':
  *         description: Session revoked
  */
-router.post('/logout', async (req, res) => {
+router.post('/logout', async (req: Request, res: Response) => {
   const refreshToken = req.body?.refresh_token
   if (typeof refreshToken !== 'string') {
     return res.status(204).end()
@@ -193,10 +193,10 @@ router.post('/logout', async (req, res) => {
   try {
     await authService.logout(refreshToken)
     return res.status(204).end()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to log out:', error)
     return res.status(500).json({ error: 'Failed to log out.' })
   }
 })
 
-module.exports = router
+export default router
